@@ -1,4 +1,4 @@
-# cek-ext-arith
+# CEK Machine Extended with Addition and Multiplication
 
 To run this program:  
 (1)Compile this code:  
