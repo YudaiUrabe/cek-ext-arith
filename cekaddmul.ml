@@ -61,16 +61,18 @@ let inject (e:term) : state = (e, StringMap.empty, Done)
 let step (sigma: state): state = 
   match sigma with
   | (TmVar x, rho, kappa) ->
-      let Clo(v, rho') = StringMap.find x rho in (ValNum v, rho', kappa)
+      let Clo(v, rho') = StringMap.find x rho in (TmNum v, rho', kappa)
+
 
   | (TmApp (e,f), rho, kappa) ->
       (e, rho, Ar(f, rho, kappa))
-  | (ValAbs lam, rho, Ar(e, rho', kappa)) ->
-      (e, rho', Fn((lam, rho), kappa)) 
-  | (ValNum _, rho, Ar(_, _, _)) ->
+  | (TmAbs lam, rho, Ar(e, rho', kappa)) ->
+      (e, rho', Fn(Clo(lam, rho), kappa)) 
+  | (TmNum _, rho, Ar(_, _, _)) ->
   failwith "Cannot apply a number as a function"
-  | (v, rho, Fn((ValAbs(x, e), rho'), kappa)) ->
+  | (v, rho, Fn(Clo(ValAbs(x, e), rho'), kappa)) ->
       (e,rho'//[x ==> Clo(v, rho)], kappa)
+
 
   | (TmAdd (e0,e1), rho, kappa) ->
       (e0, rho, Addsnd(e1, rho, kappa))
@@ -127,11 +129,11 @@ let rec string_of_term t =
   | TmAdd(e1, e2) -> "(" ^ string_of_term e1 ^ " + " ^ string_of_term e2 ^ ")"
   | TmMul(e1, e2) -> "(" ^ string_of_term e1 ^ " * " ^ string_of_term e2 ^ ")"
 
-  let string_of_state (s: state) : string =
-    match s with
-    | (TmNum n, _, Done) -> string_of_int n
-    | (TmAbs(_, _) as abs, _, Done) -> string_of_term abs
-    | _ -> "<non-final state>"
+let string_of_state (s: state) : string =
+  match s with
+  | (TmNum n, _, Done) -> string_of_int n
+  | (TmAbs(_, _) as abs, _, Done) -> string_of_term abs
+  | _ -> "<non-final state>"
   
 
   (* output *)
@@ -140,4 +142,8 @@ let rec string_of_term t =
   let result2 = evaluate term_test2 in
   print_endline ("test1 result: " ^ string_of_state result1);
   print_endline ("test2 result: " ^ string_of_state result2)
+
+
+
+
 
