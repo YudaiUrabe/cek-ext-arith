@@ -133,6 +133,26 @@ let evaluate (e: term): state =
 (* test2 ((λx.x+1)3)+(2*3) -> 10 *)
   let term_test2 = TmAdd(TmApp(TmAbs("x",TmAdd(TmVar "x",TmNum 1)),TmNum 3),TmMul(TmNum 2,TmNum 3))
 
+
+(* test3
+suc = λnsz.s(nsz)
+1 = λsz.sz
+eval (suc 1) = <λs.λz.(s ((n s) z)), [n ↦ (λs.λz.(s z), φ)], mt>
+
+cf. Under standard call-by-value evaluation,
+suc 1 ->* λsz.s(sz) = 2
+ *)
+ let term_test3 = TmApp(
+                    TmAbs("n", TmAbs ("s",TmAbs ("z", TmApp (TmVar "s", TmApp(TmApp(TmVar "n", TmVar "s"), TmVar "z"))))),
+                    TmAbs ("s", TmAbs ("z", TmApp (TmVar "s", TmVar "z"))))
+
+(* Converts a Church numeral into a TmNum 
+i.e. Convert lambad term "\f.\z.f^n z" into "(t (\x. x + 1)) 0"
+*)
+let convert_to_TmNum (t:term) :term =
+  TmApp(TmApp(t, TmAbs("x", TmAdd(TmVar("x"), TmNum(1)))), TmNum(0))
+
+
 (* to string *)
 let rec string_of_term t =
   match t with
@@ -154,8 +174,19 @@ let string_of_state (s: state) : string =
   let () =
   let result1 = evaluate term_test1 in
   let result2 = evaluate term_test2 in
+  let result3 = evaluate(convert_to_TmNum(term_test3)) in
+
+  print_endline ("test1 result: " ^ string_of_state result1);
+  print_endline ("test2 result: " ^ string_of_state result2);
+  print_endline ("test3 result: " ^ string_of_state result3);
+  
   print_endline "Testing term_test1...";
   assert(result1 = (TmNum 7, StringMap.empty//["x" ==> Clo(ValNum 6, StringMap.empty)], Done));
   print_endline "test1 passed";
+  
   assert(result2 = (TmNum 10, StringMap.empty, Done));
   print_endline "test2 passed";
+
+  match result3 with
+| (TmNum 2, _, Done) -> print_endline "test3 passed"
+| _ -> failwith "test3 failed"
